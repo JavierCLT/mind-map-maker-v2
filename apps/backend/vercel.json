@@ -1,0 +1,50 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/generate-mindmap",
+      "dest": "/api/generate-mindmap.js"
+    },
+    {
+      "src": "/deep-dive",
+      "dest": "/api/deep-dive.js"
+    },
+    {
+      "src": "/me",
+      "dest": "/api/me.js"
+    },
+    {
+      "src": "/mindmaps",
+      "dest": "/api/mindmaps.js"
+    },
+    {
+      "src": "/checkout",
+      "dest": "/api/checkout.js"
+    },
+    {
+      "src": "/billing-portal",
+      "dest": "/api/billing-portal.js"
+    },
+    {
+      "src": "/stripe-webhook",
+      "dest": "/api/stripe-webhook.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

@@ -1,0 +1,23 @@
+# Allow all web crawlers to access all content
+User-agent: *
+Allow: /
+
+# Specify the sitemap location
+Sitemap: https://mind-map-maker.com/sitemap.xml
+
+# Google-specific crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-Mobile
+Allow: /
+
+# Bing-specific crawlers
+User-agent: Bingbot
+Allow: /
+
+# Crawl delay directive (optional - adjust if needed)
+# Crawl-delay: 1
