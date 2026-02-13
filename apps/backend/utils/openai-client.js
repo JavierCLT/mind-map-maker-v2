@@ -7,12 +7,12 @@ export function getOpenAIClient() {
     return client;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY || process.env.GROK_API_KEY;
+  const apiKey = (process.env.OPENAI_API_KEY || process.env.GROK_API_KEY || "").trim();
   if (!apiKey) {
     throw new Error("Missing OPENAI_API_KEY (or GROK_API_KEY fallback)");
   }
 
-  const baseURL = process.env.OPENAI_BASE_URL;
+  const baseURL = (process.env.OPENAI_BASE_URL || "").trim();
   client = new OpenAI({
     apiKey,
     ...(baseURL ? { baseURL } : {}),
@@ -22,5 +22,5 @@ export function getOpenAIClient() {
 }
 
 export function getOpenAIModel(defaultModel = "gpt-4.1") {
-  return process.env.OPENAI_MODEL || defaultModel;
+  return (process.env.OPENAI_MODEL || defaultModel).trim();
 }

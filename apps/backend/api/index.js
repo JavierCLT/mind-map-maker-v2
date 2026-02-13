@@ -6,6 +6,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
+
+  const model = (process.env.OPENAI_MODEL || "gpt-4.1").trim();
   
   return res.status(200).json({ 
     status: "ok", 
@@ -20,6 +22,6 @@ export default async function handler(req, res) {
       "billing-portal",
       "stripe-webhook"
     ],
-    model: process.env.OPENAI_MODEL || "gpt-4.1"
+    model
   });
 }

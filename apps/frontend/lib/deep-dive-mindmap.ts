@@ -20,6 +20,7 @@ export interface DeepDiveResponse {
 
 function getBackendUrl() {
   let backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://mindmap-backend-five.vercel.app"
+  backendUrl = backendUrl.trim()
   if (!backendUrl.startsWith("http://") && !backendUrl.startsWith("https://")) {
     backendUrl = `https://${backendUrl}`
   }

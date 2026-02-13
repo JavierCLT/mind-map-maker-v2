@@ -32,3 +32,4 @@ pids
 .vscode
 *.swp
 *.swo
+.vercel

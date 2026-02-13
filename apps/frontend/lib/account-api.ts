@@ -27,6 +27,7 @@ export interface SavedMindmap {
 
 function backendBaseUrl() {
   let url = process.env.NEXT_PUBLIC_BACKEND_URL || "https://mindmap-backend-five.vercel.app"
+  url = url.trim()
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     url = `https://${url}`
   }

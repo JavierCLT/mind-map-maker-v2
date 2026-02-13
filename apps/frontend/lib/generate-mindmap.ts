@@ -17,6 +17,7 @@ export async function generateMindmapMarkdown(topic: string, accessToken?: strin
     if (!backendUrl) {
       backendUrl = "https://mindmap-backend-five.vercel.app"
     }
+    backendUrl = backendUrl.trim()
 
     if (!backendUrl.startsWith("http://") && !backendUrl.startsWith("https://")) {
       backendUrl = `https://${backendUrl}`

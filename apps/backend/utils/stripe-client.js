@@ -7,7 +7,7 @@ export function getStripeClient() {
     return stripe;
   }
 
-  const apiKey = process.env.STRIPE_SECRET_KEY;
+  const apiKey = (process.env.STRIPE_SECRET_KEY || "").trim();
   if (!apiKey) {
     throw new Error("Missing STRIPE_SECRET_KEY");
   }
@@ -19,5 +19,5 @@ export function getStripeClient() {
 }
 
 export function getFrontendUrl() {
-  return process.env.FRONTEND_URL || "http://localhost:3000";
+  return (process.env.FRONTEND_URL || "http://localhost:3000").trim();
 }
