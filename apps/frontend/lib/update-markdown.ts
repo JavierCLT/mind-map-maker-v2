@@ -1,8 +1,8 @@
 import { buildNodeMap } from "./markdown-parser"
 
 export function updateNodeInMarkdown(markdown: string, nodeId: string, newName: string): string {
-  // Split markdown into lines
-  const lines = markdown.split("\n")
+  // Keep indexing consistent with markdown-parser/buildNodeMap (which ignores blank lines).
+  const lines = markdown.split("\n").filter((line) => line.trim())
 
   // Build node map
   const nodeMap = buildNodeMap(markdown)
@@ -16,8 +16,8 @@ export function updateNodeInMarkdown(markdown: string, nodeId: string, newName: 
     throw new Error(`Node with ID ${nodeId} not found`)
   }
 
-  // Get the line index and depth
-  const { lineIndex, depth } = nodeInfo
+  // Get the line index
+  const { lineIndex } = nodeInfo
 
   // Get the original line
   const originalLine = lines[lineIndex]

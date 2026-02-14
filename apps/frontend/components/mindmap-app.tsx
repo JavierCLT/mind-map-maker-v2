@@ -14,6 +14,7 @@ import { useMobile } from "../hooks/use-mobile"
 import { renderMindmap } from "../lib/mindmap-renderer"
 import { getNodeContextById, parseMarkdown } from "../lib/markdown-parser"
 import { applyExpansionToMarkdown, deepDiveNodeAuthed, type DeepDiveAction } from "../lib/deep-dive-mindmap"
+import { updateNodeInMarkdown } from "@/lib/update-markdown"
 import { useTheme } from "next-themes"
 import * as d3 from "d3"
 import { useAuth } from "./auth-provider"
@@ -28,6 +29,8 @@ import {
   type SavedMindmap,
 } from "@/lib/account-api"
 import { ApiError } from "@/lib/api-error"
+import { NodePanel } from "@/components/node-panel"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 
 export const MindmapApp = () => {
   const [markdown, setMarkdown] = useState(defaultMarkdown) // Initialize with default markdown
@@ -75,6 +78,12 @@ export const MindmapApp = () => {
     setDeepDiveMarkdown(null)
     setSelectedNodePath(null)
   }, [selectedNodeId])
+
+  const clearSelection = useCallback(() => {
+    setSelectedNodeId(null)
+    setSelectedNodeName(null)
+    setSelectedNodePath(null)
+  }, [])
 
   const refreshAccountData = useCallback(async () => {
     if (!session?.access_token) {
@@ -195,6 +204,30 @@ export const MindmapApp = () => {
     const nextTransform = d3.zoomIdentity.translate(w / 2 - nodeX * k, h / 2 - nodeY * k).scale(k)
     d3.select(svgEl as any).transition().duration(250).call((zoomRef.current as any).transform, nextTransform)
   }, [selectedNodeId])
+
+  const handleEditSelectedNode = useCallback(
+    async (newName: string) => {
+      if (!selectedNodeId) return
+      if (!newName.trim()) return
+
+      const updatedMarkdown = updateNodeInMarkdown(markdown, selectedNodeId, newName.trim())
+      setMarkdown(updatedMarkdown)
+      setSelectedNodeName(newName.trim())
+      const ctx = getNodeContextById(updatedMarkdown, selectedNodeId)
+      setSelectedNodePath(ctx?.path || [newName.trim()])
+
+      if (currentMindmapId && session?.access_token) {
+        const root = parseMarkdown(updatedMarkdown)
+        await saveMindmap(session.access_token, {
+          id: currentMindmapId,
+          topic: topic.trim() || root.name || "Untitled Mind Map",
+          markdown: updatedMarkdown,
+        })
+        refreshAccountData()
+      }
+    },
+    [selectedNodeId, markdown, currentMindmapId, session?.access_token, topic, refreshAccountData],
+  )
 
   // Update the setLayoutWithTransform function to be more stable:
   const setLayoutWithTransform = useCallback(
@@ -1321,24 +1354,17 @@ export const MindmapApp = () => {
               setLayout={setLayoutWithTransform}
               colorScheme={colorScheme}
               setColorScheme={setColorSchemeWithTransform}
-              selectedNodeName={selectedNodeName}
-              selectedNodePath={selectedNodePath}
-              onDeepDive={handleDeepDive}
-              isDeepDiving={isDeepDiving}
-              deepDiveSummary={deepDiveSummary}
-              deepDiveMarkdown={deepDiveMarkdown}
-              onFocusNode={focusSelectedNode}
               isAuthenticated={!!session?.access_token}
               accountEmail={user?.email || null}
               plan={plan}
               monthlyMapsUsed={monthlyMapsUsed}
-            monthlyMapsLimit={monthlyMapsLimit}
-            savedMaps={savedMaps}
-            onLoadMindmap={handleLoadMindmap}
-            onOpenMapDetails={handleOpenMapDetails}
-            onUpgrade={handleUpgrade}
-            onManageBilling={handleManageBilling}
-            isBillingBusy={isBillingBusy}
+              monthlyMapsLimit={monthlyMapsLimit}
+              savedMaps={savedMaps}
+              onLoadMindmap={handleLoadMindmap}
+              onOpenMapDetails={handleOpenMapDetails}
+              onUpgrade={handleUpgrade}
+              onManageBilling={handleManageBilling}
+              isBillingBusy={isBillingBusy}
           />
         </div>
         <div className="flex-1 relative overflow-hidden">
@@ -1359,7 +1385,39 @@ export const MindmapApp = () => {
             </div>
           )}
         </div>
+
+        {/* Desktop right-side node panel */}
+        <div className="hidden md:block w-[420px] border-l border-border bg-card p-4 overflow-y-auto">
+          <NodePanel
+            selectedNodeId={selectedNodeId}
+            selectedNodeName={selectedNodeName}
+            selectedNodePath={selectedNodePath}
+            isBusy={isDeepDiving}
+            deepDiveSummary={deepDiveSummary}
+            deepDiveMarkdown={deepDiveMarkdown}
+            onEditNode={handleEditSelectedNode}
+            onExpandNode={() => handleDeepDive("expand")}
+            onClearSelection={clearSelection}
+          />
+        </div>
       </div>
+
+      {/* Mobile node panel */}
+      <Sheet open={!!selectedNodeId} onOpenChange={(open) => (!open ? clearSelection() : null)}>
+        <SheetContent side="bottom" className="p-4">
+          <NodePanel
+            selectedNodeId={selectedNodeId}
+            selectedNodeName={selectedNodeName}
+            selectedNodePath={selectedNodePath}
+            isBusy={isDeepDiving}
+            deepDiveSummary={deepDiveSummary}
+            deepDiveMarkdown={deepDiveMarkdown}
+            onEditNode={handleEditSelectedNode}
+            onExpandNode={() => handleDeepDive("expand")}
+            onClearSelection={clearSelection}
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* Mobile-only fixed input at bottom of screen */}
       {isMobile && (

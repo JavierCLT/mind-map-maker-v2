@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -10,8 +10,6 @@ import { Download, FileImage } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group"
 import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { DeepDivePanel } from "./deep-dive-panel"
-import type { DeepDiveAction } from "@/lib/deep-dive-mindmap"
 import type { SavedMindmap } from "@/lib/account-api"
 
 interface SidebarProps {
@@ -26,13 +24,6 @@ interface SidebarProps {
   setLayout: (layout: "right" | "bi") => void
   colorScheme: "default" | "vibrant" | "summer" | "monochrome"
   setColorScheme: (scheme: "default" | "vibrant" | "summer" | "monochrome") => void
-  selectedNodeName: string | null
-  selectedNodePath?: string[] | null
-  onDeepDive: (action: DeepDiveAction, compareWith?: string) => void
-  isDeepDiving: boolean
-  deepDiveSummary: string | null
-  deepDiveMarkdown: string | null
-  onFocusNode?: () => void
   isAuthenticated: boolean
   accountEmail: string | null
   plan: "free" | "pro"
@@ -58,13 +49,6 @@ export function Sidebar({
   setLayout,
   colorScheme,
   setColorScheme,
-  selectedNodeName,
-  selectedNodePath,
-  onDeepDive,
-  isDeepDiving,
-  deepDiveSummary,
-  deepDiveMarkdown,
-  onFocusNode,
   isAuthenticated,
   accountEmail,
   plan,
@@ -79,7 +63,6 @@ export function Sidebar({
 }: SidebarProps) {
   const MAX_CHARS = 90
   const [charCount, setCharCount] = useState(0)
-  const deepDiveRef = useRef<HTMLDivElement | null>(null)
 
   // Updated example topics - two longer, more detailed options
   const exampleTopics = ["Personal finance guide for teens", "Plan a trip to Madrid, Spain"]
@@ -97,10 +80,7 @@ export function Sidebar({
     setCharCount(topic.length)
   }, [topic])
 
-  useEffect(() => {
-    if (!selectedNodeName) return
-    deepDiveRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [selectedNodeName])
+  // Node interactions are handled in the right-side panel.
 
   // Handle input change with character limit
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,18 +224,6 @@ export function Sidebar({
           )}
         </CardContent>
       </Card>
-
-      <div ref={deepDiveRef}>
-        <DeepDivePanel
-          selectedNodeName={selectedNodeName}
-          selectedNodePath={selectedNodePath}
-          isLoading={isDeepDiving}
-          resultSummary={deepDiveSummary}
-          resultMarkdown={deepDiveMarkdown}
-          onAction={onDeepDive}
-          onFocusNode={onFocusNode}
-        />
-      </div>
 
       {/* Mobile-only navigation buttons */}
       <div className="md:hidden mb-3">
