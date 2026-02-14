@@ -42,6 +42,7 @@ export const MindmapApp = () => {
   const [isDefaultMindmap, setIsDefaultMindmap] = useState(true) // Track if we're showing the default mindmap
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedNodeName, setSelectedNodeName] = useState<string | null>(null)
+  const [selectedNodePath, setSelectedNodePath] = useState<string[] | null>(null)
   const [isDeepDiving, setIsDeepDiving] = useState(false)
   const [deepDiveSummary, setDeepDiveSummary] = useState<string | null>(null)
   const [deepDiveMarkdown, setDeepDiveMarkdown] = useState<string | null>(null)
@@ -72,6 +73,7 @@ export const MindmapApp = () => {
   useEffect(() => {
     setDeepDiveSummary(null)
     setDeepDiveMarkdown(null)
+    setSelectedNodePath(null)
   }, [selectedNodeId])
 
   const refreshAccountData = useCallback(async () => {
@@ -143,22 +145,23 @@ export const MindmapApp = () => {
         theme: currentTheme,
         isMobile, // Pass isMobile flag to renderer
         selectedNodeId,
+        onTransformChange: (transform) => {
+          currentTransformRef.current = transform
+        },
         onNodeClick: (node) => {
           setSelectedNodeId(node.id)
           setSelectedNodeName(node.name)
+          const context = getNodeContextById(markdown, node.id)
+          setSelectedNodePath(context?.path || [node.name])
         },
       })
 
       // Store the zoom behavior for later use
       zoomRef.current = zoom
 
-      // Only update the transform if we don't already have one
-      if (!preserveTransform && svg.node()) {
-        // Use requestAnimationFrame for smoother updates
-        requestAnimationFrame(() => {
-          const transform = d3.zoomTransform(svg.node() as any)
-          currentTransformRef.current = transform
-        })
+      // Ensure we always have a baseline transform recorded.
+      if (!currentTransformRef.current && svg.node()) {
+        currentTransformRef.current = d3.zoomTransform(svg.node() as any)
       }
     } catch (error) {
       console.error("Error rendering mindmap:", error)
@@ -169,6 +172,29 @@ export const MindmapApp = () => {
       })
     }
   }, [markdown, layout, colorScheme, resolvedTheme, mounted, toast, isMobile, selectedNodeId])
+
+  const focusSelectedNode = useCallback(() => {
+    if (!mindmapRef.current || !selectedNodeId) return
+
+    const svgEl = mindmapRef.current.querySelector("svg") as SVGSVGElement | null
+    const nodeEl = mindmapRef.current.querySelector(`.mindmap-node[data-id="${selectedNodeId}"]`) as SVGGElement | null
+    if (!svgEl || !nodeEl || !zoomRef.current) return
+
+    const transformAttr = nodeEl.getAttribute("transform") || ""
+    const match = transformAttr.match(/translate\\(([-0-9.]+)[ ,]([-0-9.]+)\\)/)
+    if (!match) return
+
+    // Renderer uses translate(y, x) where y is horizontal and x is vertical.
+    const nodeX = Number.parseFloat(match[1])
+    const nodeY = Number.parseFloat(match[2])
+
+    const k = (currentTransformRef.current?.k as number | undefined) ?? d3.zoomTransform(svgEl as any).k ?? 1
+    const w = mindmapRef.current.clientWidth || 1
+    const h = mindmapRef.current.clientHeight || 1
+
+    const nextTransform = d3.zoomIdentity.translate(w / 2 - nodeX * k, h / 2 - nodeY * k).scale(k)
+    d3.select(svgEl as any).transition().duration(250).call((zoomRef.current as any).transform, nextTransform)
+  }, [selectedNodeId])
 
   // Update the setLayoutWithTransform function to be more stable:
   const setLayoutWithTransform = useCallback(
@@ -1283,27 +1309,29 @@ export const MindmapApp = () => {
             isSidebarOpen ? "w-screen md:w-80" : "w-0 overflow-hidden"
           }`}
         >
-          <Sidebar
-            topic={topic}
-            setTopic={handleTopicChange}
-            onGenerate={handleGenerateMindmap}
-            onExport={handleExport}
-            isGenerating={isGenerating}
-            onExampleTopic={handleExampleTopic}
-            isSettingsOpen={isSettingsOpen}
-            layout={layout}
-            setLayout={setLayoutWithTransform}
-            colorScheme={colorScheme}
-            setColorScheme={setColorSchemeWithTransform}
-            selectedNodeName={selectedNodeName}
-            onDeepDive={handleDeepDive}
-            isDeepDiving={isDeepDiving}
-            deepDiveSummary={deepDiveSummary}
-            deepDiveMarkdown={deepDiveMarkdown}
-            isAuthenticated={!!session?.access_token}
-            accountEmail={user?.email || null}
-            plan={plan}
-            monthlyMapsUsed={monthlyMapsUsed}
+            <Sidebar
+              topic={topic}
+              setTopic={handleTopicChange}
+              onGenerate={handleGenerateMindmap}
+              onExport={handleExport}
+              isGenerating={isGenerating}
+              onExampleTopic={handleExampleTopic}
+              isSettingsOpen={isSettingsOpen}
+              layout={layout}
+              setLayout={setLayoutWithTransform}
+              colorScheme={colorScheme}
+              setColorScheme={setColorSchemeWithTransform}
+              selectedNodeName={selectedNodeName}
+              selectedNodePath={selectedNodePath}
+              onDeepDive={handleDeepDive}
+              isDeepDiving={isDeepDiving}
+              deepDiveSummary={deepDiveSummary}
+              deepDiveMarkdown={deepDiveMarkdown}
+              onFocusNode={focusSelectedNode}
+              isAuthenticated={!!session?.access_token}
+              accountEmail={user?.email || null}
+              plan={plan}
+              monthlyMapsUsed={monthlyMapsUsed}
             monthlyMapsLimit={monthlyMapsLimit}
             savedMaps={savedMaps}
             onLoadMindmap={handleLoadMindmap}

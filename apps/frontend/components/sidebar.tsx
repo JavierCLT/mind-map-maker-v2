@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -27,10 +27,12 @@ interface SidebarProps {
   colorScheme: "default" | "vibrant" | "summer" | "monochrome"
   setColorScheme: (scheme: "default" | "vibrant" | "summer" | "monochrome") => void
   selectedNodeName: string | null
+  selectedNodePath?: string[] | null
   onDeepDive: (action: DeepDiveAction, compareWith?: string) => void
   isDeepDiving: boolean
   deepDiveSummary: string | null
   deepDiveMarkdown: string | null
+  onFocusNode?: () => void
   isAuthenticated: boolean
   accountEmail: string | null
   plan: "free" | "pro"
@@ -57,10 +59,12 @@ export function Sidebar({
   colorScheme,
   setColorScheme,
   selectedNodeName,
+  selectedNodePath,
   onDeepDive,
   isDeepDiving,
   deepDiveSummary,
   deepDiveMarkdown,
+  onFocusNode,
   isAuthenticated,
   accountEmail,
   plan,
@@ -75,6 +79,7 @@ export function Sidebar({
 }: SidebarProps) {
   const MAX_CHARS = 90
   const [charCount, setCharCount] = useState(0)
+  const deepDiveRef = useRef<HTMLDivElement | null>(null)
 
   // Updated example topics - two longer, more detailed options
   const exampleTopics = ["Personal finance guide for teens", "Plan a trip to Madrid, Spain"]
@@ -91,6 +96,11 @@ export function Sidebar({
   useEffect(() => {
     setCharCount(topic.length)
   }, [topic])
+
+  useEffect(() => {
+    if (!selectedNodeName) return
+    deepDiveRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [selectedNodeName])
 
   // Handle input change with character limit
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,13 +245,17 @@ export function Sidebar({
         </CardContent>
       </Card>
 
-      <DeepDivePanel
-        selectedNodeName={selectedNodeName}
-        isLoading={isDeepDiving}
-        resultSummary={deepDiveSummary}
-        resultMarkdown={deepDiveMarkdown}
-        onAction={onDeepDive}
-      />
+      <div ref={deepDiveRef}>
+        <DeepDivePanel
+          selectedNodeName={selectedNodeName}
+          selectedNodePath={selectedNodePath}
+          isLoading={isDeepDiving}
+          resultSummary={deepDiveSummary}
+          resultMarkdown={deepDiveMarkdown}
+          onAction={onDeepDive}
+          onFocusNode={onFocusNode}
+        />
+      </div>
 
       {/* Mobile-only navigation buttons */}
       <div className="md:hidden mb-3">

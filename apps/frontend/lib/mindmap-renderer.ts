@@ -21,6 +21,7 @@ interface RenderOptions {
   isMobile?: boolean // Flag for mobile view
   onNodeClick?: (node: MindmapNode) => void
   selectedNodeId?: string | null
+  onTransformChange?: (transform: d3.ZoomTransform) => void
 }
 
 // Update the COLOR_SCHEMES object with the new color palettes
@@ -87,20 +88,6 @@ const COLOR_SCHEMES = {
 const nodeDimensionsCache = new Map<string, { width: number; height: number }>()
 
 export function renderMindmap(container: HTMLElement, data: MindmapNode, options: RenderOptions) {
-  // Debounce transform updates to prevent fluttering
-  let transformUpdateTimeout: number | null = null
-  const currentTransformRef: { current: any } = { current: null }
-  const updateTransform = (newTransform: any) => {
-    if (transformUpdateTimeout) {
-      clearTimeout(transformUpdateTimeout)
-    }
-
-    transformUpdateTimeout = window.setTimeout(() => {
-      currentTransformRef.current = newTransform
-      transformUpdateTimeout = null
-    }, 100) as unknown as number
-  }
-
   // Clear container
   container.innerHTML = ""
 
@@ -120,8 +107,7 @@ export function renderMindmap(container: HTMLElement, data: MindmapNode, options
   // Create a zoom behavior
   const zoom = d3.zoom<SVGSVGElement, unknown>().on("zoom", (event) => {
     g.attr("transform", event.transform)
-    // Update transform with debounce
-    updateTransform(event.transform)
+    options.onTransformChange?.(event.transform)
   })
 
   // Only add zoom behavior if not in export mode

@@ -8,10 +8,12 @@ import type { DeepDiveAction } from "@/lib/deep-dive-mindmap"
 
 interface DeepDivePanelProps {
   selectedNodeName: string | null
+  selectedNodePath?: string[] | null
   isLoading: boolean
   resultSummary: string | null
   resultMarkdown: string | null
   onAction: (action: DeepDiveAction, compareWith?: string) => void
+  onFocusNode?: () => void
 }
 
 const ACTIONS: Array<{ key: DeepDiveAction; label: string }> = [
@@ -24,12 +26,17 @@ const ACTIONS: Array<{ key: DeepDiveAction; label: string }> = [
 
 export function DeepDivePanel({
   selectedNodeName,
+  selectedNodePath,
   isLoading,
   resultSummary,
   resultMarkdown,
   onAction,
+  onFocusNode,
 }: DeepDivePanelProps) {
   const [compareWith, setCompareWith] = useState("")
+
+  const breadcrumb = selectedNodePath?.length ? selectedNodePath.join(" > ") : null
+  const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard?.writeText
 
   return (
     <Card className="mb-4">
@@ -38,8 +45,31 @@ export function DeepDivePanel({
         <p className="text-xs text-muted-foreground">
           {selectedNodeName ? `Selected node: ${selectedNodeName}` : "Select a node from the map first"}
         </p>
+        {breadcrumb && <p className="text-[11px] text-muted-foreground truncate">Path: {breadcrumb}</p>}
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!selectedNodeName || isLoading || !onFocusNode}
+            onClick={() => onFocusNode?.()}
+          >
+            Focus
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!breadcrumb || isLoading || !canCopy}
+            onClick={async () => {
+              if (!breadcrumb) return
+              await navigator.clipboard.writeText(breadcrumb)
+            }}
+          >
+            Copy Path
+          </Button>
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           {ACTIONS.map((action) => (
             <Button
