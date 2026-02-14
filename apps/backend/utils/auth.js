@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "./supabase-admin.js";
+import { getSupabaseAuthClient } from "./supabase-auth.js";
 
 export class HttpError extends Error {
   constructor(status, message, code) {
@@ -22,7 +22,7 @@ export async function requireUser(req) {
     throw new HttpError(401, "Authentication required", "AUTH_REQUIRED");
   }
 
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabaseAuthClient();
   const { data, error } = await supabase.auth.getUser(token);
 
   if (error || !data?.user) {
