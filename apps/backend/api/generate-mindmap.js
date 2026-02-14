@@ -6,6 +6,11 @@ import { extractTextFromCompletion } from "../utils/json-response.js";
 import { requireUser, sendError } from "../utils/auth.js";
 import { FREE_MONTHLY_MAPS, getAccountSummary, saveMindmap } from "../utils/account.js";
 
+function quotasDisabled() {
+  const raw = (process.env.DISABLE_QUOTAS || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
 export default async function handler(req, res) {
   corsMiddleware(req, res);
 
@@ -35,7 +40,7 @@ export default async function handler(req, res) {
     }
 
     const account = await getAccountSummary(user);
-    if (!account.isPaid && account.monthlyMapsUsed >= FREE_MONTHLY_MAPS) {
+    if (!quotasDisabled() && !account.isPaid && account.monthlyMapsUsed >= FREE_MONTHLY_MAPS) {
       return res.status(402).json({
         error: "Monthly free limit reached",
         message: "Free plan includes 3 maps per month. Upgrade for unlimited maps.",
